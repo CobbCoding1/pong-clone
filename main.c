@@ -71,8 +71,6 @@ int main(){
 _reset:
     SDL_Renderer *rend = SDL_CreateRenderer(win, -1, render_flags);
 
-
-
     // SDL TTF
     TTF_Init();
     TTF_Font *font = TTF_OpenFont("/usr/share/fonts/ubuntu/UbuntuMono-R.ttf", 64);
@@ -136,16 +134,38 @@ _reset:
     bool close = false;
     bool reset = false;
 
-    int speed = 1000;
+    bool up = false;
+    bool down = false;
+
+    int speed = 300;
     BallSpeed ball_speed;
-    ball_speed.speed_x = 400;
-    ball_speed.speed_y = 0;
+    ball_speed.speed_x = 300;
     ball_speed.speed_y = rand() % (200 + 1 - -200) + -200;
 
+    Uint64 now = SDL_GetPerformanceCounter();
+    Uint64 last = 0;
+    double delta_time = 0;
+
     while(!close){
-        ball.x += ball_speed.speed_x / 30;
-        ball.y += ball_speed.speed_y / 30;
+
+        // clamp ball speed
+        if(ball_speed.speed_y > 200){
+            ball_speed.speed_y = 200;
+        }
+
+        if(ball_speed.speed_y < -200){
+            ball_speed.speed_y = -200;
+        }
+
+        ball.x += (ball_speed.speed_x / 30) * delta_time;
+        ball.y += (ball_speed.speed_y / 30) * delta_time;
         SDL_Event event;
+
+        last = now;
+        now = SDL_GetPerformanceCounter();
+        delta_time = (double)((now - last) * 1000) / (double)SDL_GetPerformanceFrequency();
+
+        delta_time *= 0.1;
 
         if(player.score >= 11 || dest2.score >= 11){
             reset = false;
@@ -161,30 +181,46 @@ _reset:
         get_text_and_rect(rend, (WIDTH/2) + 100, 0, enemy_score, font, &word_texture2, &word2);
 
         while(SDL_PollEvent(&event)){
-            switch(event.type){
-                case SDL_QUIT:
-                    close = true;
-                    break;
-                case SDL_KEYDOWN:
-                    switch(event.key.keysym.scancode){
-                        case SDL_SCANCODE_W:
-                            player.rect.y -= speed / 30;
-                            break;
-                        case SDL_SCANCODE_S:
-                            player.rect.y += speed / 30;
-                            break;
-                        default:
-                            break;
-                    }
+            if(event.type == SDL_QUIT){
+                close = true;
+                break;
+            }
+            if(event.type == SDL_KEYDOWN){
+                if(event.key.keysym.scancode == SDL_SCANCODE_W){
+                    up = true;
+                }
+
+                if(event.key.keysym.scancode == SDL_SCANCODE_S){
+                    down = true;
+
+                }
+            }
+            if(event.type == SDL_KEYUP){
+                if(event.key.keysym.scancode == SDL_SCANCODE_W){
+                    up = false;
+                }
+
+                if(event.key.keysym.scancode == SDL_SCANCODE_S){
+                    down = false;
+                }
             }
         }
 
+        // move player based on direction
+        if(up){
+            player.rect.y -= (speed / 30) * delta_time;
+        }
+
+        if(down){
+            player.rect.y += (speed / 30) * delta_time;
+        }
+
         if(dest2.rect.y < ball.y){
-            dest2.rect.y += speed / 100;
+            dest2.rect.y += (speed / 100) * delta_time;
         }
 
         if(dest2.rect.y > ball.y){
-            dest2.rect.y -= speed / 100;
+            dest2.rect.y -= (speed / 100) * delta_time;
         }
 
 
@@ -258,7 +294,7 @@ _reset:
         SDL_RenderCopy(rend, word_texture2, NULL, &word2);
         SDL_RenderCopy(rend, net_tex, NULL, &net_rect);
         SDL_RenderPresent(rend);
-        SDL_Delay(1000 / 60);
+        SDL_Delay((1000 / 60));
     }
 
 
