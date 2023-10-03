@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <time.h>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -9,6 +10,7 @@
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
+
 
 int WIDTH = 1280;
 int HEIGHT = 720;
@@ -50,6 +52,7 @@ void get_text_and_rect(SDL_Renderer *renderer, int x, int y, char *text, TTF_Fon
 }
 
 int main(){
+    srand(time(NULL));
 
     Paddle player;
     player.score = 0;
@@ -135,8 +138,9 @@ _reset:
 
     int speed = 1000;
     BallSpeed ball_speed;
-    ball_speed.speed_x = 300;
+    ball_speed.speed_x = 400;
     ball_speed.speed_y = 0;
+    ball_speed.speed_y = rand() % (200 + 1 - -200) + -200;
 
     while(!close){
         ball.x += ball_speed.speed_x / 30;
@@ -176,11 +180,11 @@ _reset:
         }
 
         if(dest2.rect.y < ball.y){
-            dest2.rect.y += speed / 300;
+            dest2.rect.y += speed / 100;
         }
 
         if(dest2.rect.y > ball.y){
-            dest2.rect.y -= speed / 300;
+            dest2.rect.y -= speed / 100;
         }
 
 
@@ -211,13 +215,20 @@ _reset:
         }
 
         if(handle_ball_bouncing_off_paddle(ball, player.rect)){
+            printf("ball y: %d, player y: %d, player height: %d, %f\n", ball.y, player.rect.y, player.rect.h, (float)(ball.y - player.rect.y) / (float)player.rect.h);
             ball_speed.speed_x = -ball_speed.speed_x;
-            ball_speed.speed_y = 300;
+
+            float speed_y = (float)(ball.y - player.rect.y) / (float)player.rect.h;
+
+            ball_speed.speed_y = (speed_y * (float)1000);
         }
 
         if(handle_ball_bouncing_off_paddle(ball, dest2.rect)){
             ball_speed.speed_x = -ball_speed.speed_x;
-            ball_speed.speed_y = -300;
+
+            float speed_y = (float)(ball.y - dest2.rect.y) / (float)dest2.rect.h;
+
+            ball_speed.speed_y = -(speed_y * (float)1000);
         }
         
         if(ball.x < 0){
